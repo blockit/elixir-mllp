@@ -9,16 +9,16 @@ on:
 
 env:
   MIX_ENV: test
-  otp-version: '24.3.4.1'
-  elixir-version: '1.13'
-  cache-version: '2'
+  otp-version: "26"
+  elixir-version: "1.16.2"
+  cache-version: "4"
 
 jobs:
   build:
     strategy:
       matrix:
-        otp: ['23.3.4.7', '24.3.4.1']
-        elixir: ['1.11.4', '1.12', '1.13']
+        otp: ["26.0.2"]
+        elixir: ["1.16.2"]
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +42,7 @@ jobs:
       - name: deps.get
         run: mix deps.get
       - name: compile
-        run: | 
+        run: |
           mix compile --warnings-as-errors
 
   format:
@@ -74,8 +74,8 @@ jobs:
     needs: build
     strategy:
       matrix:
-        otp: ['23.3.4.7', '24.3.4.1']
-        elixir: ['1.11.4', '1.12', '1.13']
+        otp: ["26.0.2"]
+        elixir: ["1.16.2"]
     name: Dialyzer
     runs-on: ubuntu-latest
     steps:
@@ -108,8 +108,8 @@ jobs:
     needs: build
     strategy:
       matrix:
-        otp: ['23.3.4.7', '24.3.4.1']
-        elixir: ['1.11.4', '1.12', '1.13']
+        otp: ["26.0.2"]
+        elixir: ["1.16.2"]
     name: Test
     runs-on: ubuntu-latest
     steps:
