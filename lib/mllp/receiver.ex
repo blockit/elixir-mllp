@@ -41,7 +41,8 @@ defmodule MLLP.Receiver do
           dispatcher: module(),
           packet_framer: module(),
           transport_opts: :ranch.opts(),
-          context: map()
+          context: map(),
+          ref: term()
         ]
 
   @behaviour :ranch_protocol
@@ -243,8 +244,13 @@ defmodule MLLP.Receiver do
 
         {tls_options, options1} ->
           verify_peer = Keyword.get(tls_options, :verify)
+          ssl_transport = Keyword.get(tls_options, :ssl_transport, :ranch_ssl)
 
-          {:ranch_ssl, Keyword.merge(get_peer_options(verify_peer), tls_options), options1}
+          {ssl_transport,
+           Keyword.merge(
+             get_peer_options(verify_peer),
+             tls_options |> Keyword.delete(:ssl_transport)
+           ), options1}
       end
 
     socket_opts = get_socket_options(transport_opts, port) ++ tls_options1
@@ -329,7 +335,9 @@ defmodule MLLP.Receiver do
         :gen_server.enter_loop(__MODULE__, [], state)
 
       {:error, error} ->
-        Logger.warn("Failed to verify client #{inspect(client_info)}, error: #{inspect(error)}")
+        Logger.warning(
+          "Failed to verify client #{inspect(client_info)}, error: #{inspect(error)}"
+        )
 
         {:stop,
          %{message: "Failed to verify client #{inspect(client_info)}, error: #{inspect(error)}"}}
@@ -338,6 +346,7 @@ defmodule MLLP.Receiver do
 
   def handle_info({message, socket, data}, state) when message in [:tcp, :ssl] do
     Logger.debug(fn -> "Receiver received data: [#{inspect(data)}]." end)
+
     framing_context = handle_received_data(socket, data, state.framing_context, state.transport)
     {:noreply, %{state | framing_context: framing_context}}
   end
@@ -358,7 +367,7 @@ defmodule MLLP.Receiver do
   end
 
   def handle_info(msg, state) do
-    Logger.warn("Unexpected handle_info for msg [#{inspect(msg)}].")
+    Logger.warning("Unexpected handle_info for msg [#{inspect(msg)}].")
     {:noreply, state}
   end
 
@@ -427,7 +436,7 @@ defmodule MLLP.Receiver do
         address
 
       error ->
-        Logger.warn(
+        Logger.warning(
           "IP/hostname #{inspect(name)} provided is not a valid IP/hostname #{inspect(error)}. It will be filtered from allowed_clients list"
         )
 
